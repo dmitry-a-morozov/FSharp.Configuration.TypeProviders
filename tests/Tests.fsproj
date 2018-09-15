@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Json.fs" />
+    <!--<Compile Include="Xml.fs" />-->
+    <Compile Include="Program.fs" Condition="'$(TargetFramework)' == 'netcoreapp2.0' " />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.xml" />
+    <Content Include="appsettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Xml" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="2.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FSharp.Configuration.TypeProviders.DesignTime">
+      <HintPath>..\src\bin\Debug\net461\FSharp.Configuration.TypeProviders.DesignTime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!--<PropertyGroup>
+    <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+    <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+    <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsWindows)' == 'true' AND Exists('C:\Program Files (x86)\Microsoft SDKs\F#\10.1\Framework\v4.0\fsc.exe')">
+    <FscToolPath>C:\Program Files (x86)\Microsoft SDKs\F#\10.1\Framework\v4.0</FscToolPath>
+    <FscToolExe>fsc.exe</FscToolExe>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsOSX)' == 'true'  AND Exists('/Library/Frameworks/Mono.framework/Versions/Current/Commands/fsharpc')">
+    <FscToolPath>/Library/Frameworks/Mono.framework/Versions/Current/Commands</FscToolPath>
+    <FscToolExe>fsharpc</FscToolExe>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsLinux)' == 'true' AND Exists('/usr/bin/fsharpc')">
+    <FscToolPath>/usr/bin</FscToolPath>
+    <FscToolExe>fsharpc</FscToolExe>
+  </PropertyGroup>-->
+
+</Project>

@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AssemblyName>FSharp.Configuration.TypeProviders.DesignTime</AssemblyName>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\FSharp.TypeProviders.SDK\src\ProvidedTypes.fsi" />
+    <Compile Include="..\FSharp.TypeProviders.SDK\src\ProvidedTypes.fs" />
+    <Compile Include="TypeProviderAssembly.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Xml" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="2.0.1" />
+  </ItemGroup>
+
+</Project>

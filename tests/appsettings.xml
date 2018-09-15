@@ -1,0 +1,12 @@
+<AppSettings>
+  <Section1 Key11="Value1">
+    <Key12>Value2</Key12>
+    <SubSection11>
+      <SubKey11>SubValue1</SubKey11>
+    </SubSection11>
+  </Section1>
+  <Section2>
+    <Key21>Value1</Key21>
+  </Section2>
+  <Section3/>
+</AppSettings>
