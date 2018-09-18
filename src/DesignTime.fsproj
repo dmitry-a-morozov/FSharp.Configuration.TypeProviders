@@ -4,6 +4,7 @@
     <TargetFramework>net461</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AssemblyName>FSharp.Configuration.TypeProviders.DesignTime</AssemblyName>
+    <DefineConstants>NO_GENERATIVE</DefineConstants>
     <DebugType>full</DebugType>
   </PropertyGroup>
 

@@ -16,6 +16,12 @@ do ()
 type TypeProviders(config) as this = 
     inherit TypeProviderForNamespaces(config)
     
+#if !NO_GENERATIVE
+    let tempAssembly = ProvidedAssembly()
+    let isErased = Some false
+#else
+    let isErased = Some true
+#endif
 
     let getProviderType(name, assembly, nameSpace, resolutionFolder, createSource: unit -> #FileConfigurationSource) = 
 
@@ -33,24 +39,24 @@ type TypeProviders(config) as this =
                             source
                         )
                         .Build()
-
             
-                let tempAssembly = ProvidedAssembly()
-                let rootType = ProvidedTypeDefinition(tempAssembly, nameSpace, typeName, Some typeof<obj>, isErased = false)
+                let rootType = ProvidedTypeDefinition(assembly, nameSpace, typeName, Some typeof<obj>, ?isErased = isErased)
+
+#if !NO_GENERATIVE
+                tempAssembly.AddTypes [ rootType ]
+#endif
 
                 let addInstanceTypePrefix (pt: ProvidedTypeDefinition) = 
                     let intanceType = ProvidedTypeDefinition("InstanceType", Some typeof<obj>, isErased = false)
-                    //let intanceType = ProvidedTypeDefinition(tempAssembly, nameSpace, "InstanceType", Some typeof<obj>, isErased = false)
                     intanceType.AddMember <| ProvidedConstructor([], (fun _ -> <@@ () @@>), IsImplicitConstructor = true) 
                     pt.AddMember intanceType
-                    tempAssembly.AddTypes [ intanceType ]
                     intanceType
 
                 let intanceType = addInstanceTypePrefix rootType
 
-                let rec addChildSectionTypes (parentConfigSection: IConfiguration) (parentStaticType: ProvidedTypeDefinition) (parentInstanceType: ProvidedTypeDefinition option) = 
+                let rec addChildSectionTypes (parentConfigSection: IConfiguration) (parentStaticType: ProvidedTypeDefinition) (parentInstanceType: ProvidedTypeDefinition) = 
                     for section in parentConfigSection.GetChildren() do
-                        let sectionStaticType = ProvidedTypeDefinition(section.Key, Some typeof<obj>, isErased = false)
+                        let sectionStaticType = ProvidedTypeDefinition(section.Key, Some typeof<obj>, ?isErased = isErased)
                         sectionStaticType.AddMember <| ProvidedField.Literal("Path", typeof<string>, section.Path) 
                         parentStaticType.AddMember sectionStaticType
 
@@ -60,33 +66,30 @@ type TypeProviders(config) as this =
                         else
                             addChildSectionTypes section sectionStaticType parentInstanceType
 
-                        let propType = 
-                            if section.Value <> null 
-                            then 
-                                sectionStaticType.AddMember <| ProvidedField.Literal("Value", typeof<string>, section.Value) 
-                                typeof<string> 
-                            else    
-                                let instanceType = addInstanceTypePrefix sectionStaticType
-                                addChildSectionTypes section sectionStaticType (Some instanceType)
-                                upcast instanceType
+                        //let propType = 
+                        //    if section.Value <> null 
+                        //    then 
+                        //        sectionStaticType.AddMember <| ProvidedField.Literal("Value", typeof<string>, section.Value) 
+                        //        typeof<string> 
+                        //    else    
+                        //        let instanceType = addInstanceTypePrefix sectionStaticType
+                        //        addChildSectionTypes section sectionStaticType instanceType
+                        //        upcast instanceType
 
-                        if parentInstanceType.IsSome
-                        then 
-                            let backingField = ProvidedField(section.Key, propType)
-                            parentInstanceType.Value.AddMember backingField
+                        //let backingField = ProvidedField(section.Key, propType)
+                        //parentInstanceType.AddMember backingField
                                 
-                            parentInstanceType.Value.AddMember <| 
-                                ProvidedProperty(
-                                    section.Key, 
-                                    propType, 
-                                    getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)), 
-                                    setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1]))
-                                )
+                        //parentInstanceType.AddMember <| 
+                        //    ProvidedProperty(
+                        //        section.Key, 
+                        //        propType, 
+                        //        getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)), 
+                        //        setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1]))
+                        //    )
 
-                //addChildSectionTypes configRoot rootType intanceType
-                addChildSectionTypes configRoot rootType None
+                addChildSectionTypes configRoot rootType intanceType
+            
 
-                tempAssembly.AddTypes [ rootType ]
                 rootType
             ) 
         )
