@@ -41,35 +41,36 @@ type TypeProviders(config) as this =
                         .Build()
             
                 let rootType = ProvidedTypeDefinition(assembly, nameSpace, typeName, Some typeof<obj>, ?isErased = isErased)
-
 #if !NO_GENERATIVE
                 tempAssembly.AddTypes [ rootType ]
-#endif
 
                 let addInstanceTypePrefix (pt: ProvidedTypeDefinition) = 
-                    let intanceType = ProvidedTypeDefinition("InstanceType", Some typeof<obj>, isErased = false)
+                    let intanceType = ProvidedTypeDefinition("InstanceType", Some typeof<obj>, ?isErased = isErased)
                     intanceType.AddMember <| ProvidedConstructor([], (fun _ -> <@@ () @@>), IsImplicitConstructor = true) 
                     pt.AddMember intanceType
                     intanceType
 
                 let intanceType = addInstanceTypePrefix rootType
-
+#else
+                let intanceType = Unchecked.defaultof<_>
+#endif
                 let rec addChildSectionTypes (parentConfigSection: IConfiguration) (parentStaticType: ProvidedTypeDefinition) (parentInstanceType: ProvidedTypeDefinition) = 
                     for section in parentConfigSection.GetChildren() do
                         let sectionStaticType = ProvidedTypeDefinition(section.Key, Some typeof<obj>, ?isErased = isErased)
                         sectionStaticType.AddMember <| ProvidedField.Literal("Path", typeof<string>, section.Path) 
                         parentStaticType.AddMember sectionStaticType
 
-                        if section.Value <> null 
+                        let isSection = section.Value <> null 
+                        if isSection
                         then 
-                            sectionStaticType.AddMember <| ProvidedField.Literal("Value", typeof<string>, section.Value) 
-                        else
+                            sectionStaticType.AddMember( ProvidedField.Literal( "Value", typeof<string>, section.Value))
+                        else //value
                             addChildSectionTypes section sectionStaticType parentInstanceType
 
                         //let propType = 
                         //    if section.Value <> null 
                         //    then 
-                        //        sectionStaticType.AddMember <| ProvidedField.Literal("Value", typeof<string>, section.Value) 
+                        //        sectionStaticType.AddMember( ProvidedField.Literal( "Value", typeof<string>, section.Value))
                         //        typeof<string> 
                         //    else    
                         //        let instanceType = addInstanceTypePrefix sectionStaticType
@@ -87,7 +88,7 @@ type TypeProviders(config) as this =
                         //        setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1]))
                         //    )
 
-                addChildSectionTypes configRoot rootType intanceType
+                addChildSectionTypes configRoot rootType Unchecked.defaultof<_>
             
 
                 rootType
