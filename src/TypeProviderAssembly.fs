@@ -16,16 +16,9 @@ do ()
 type TypeProviders(config) as this = 
     inherit TypeProviderForNamespaces(config)
     
-#if !NO_GENERATIVE
-    let tempAssembly = ProvidedAssembly()
-    let isErased = Some false
-#else
-    let isErased = Some true
-#endif
-
     let getProviderType(name, assembly, nameSpace, resolutionFolder, createSource: unit -> #FileConfigurationSource) = 
 
-        let providerType = ProvidedTypeDefinition(assembly, nameSpace, name, Some typeof<obj>)
+        let providerType = ProvidedTypeDefinition(assembly, nameSpace, name, Some typeof<obj>, isErased = false)
 
         providerType.DefineStaticParameters(
             parameters = [ ProvidedStaticParameter("Path", typeof<string>) ],             
@@ -40,55 +33,59 @@ type TypeProviders(config) as this =
                         )
                         .Build()
             
-                let rootType = ProvidedTypeDefinition(assembly, nameSpace, typeName, Some typeof<obj>, ?isErased = isErased)
-#if !NO_GENERATIVE
+                let tempAssembly = ProvidedAssembly()
+
+                let rootType = ProvidedTypeDefinition(tempAssembly, nameSpace, typeName, Some typeof<obj>, isErased = false)
+
                 tempAssembly.AddTypes [ rootType ]
 
-                let addInstanceTypePrefix (pt: ProvidedTypeDefinition) = 
-                    let intanceType = ProvidedTypeDefinition("InstanceType", Some typeof<obj>, ?isErased = isErased)
-                    intanceType.AddMember <| ProvidedConstructor([], (fun _ -> <@@ () @@>), IsImplicitConstructor = true) 
+                let addInstanceType (pt: ProvidedTypeDefinition) = 
+                    let intanceType = ProvidedTypeDefinition(tempAssembly, nameSpace, "InstanceType", Some typeof<obj>, isErased = false)
+                    let ctor = ProvidedConstructor([], (fun _ -> <@@ () @@>), IsImplicitConstructor = true) 
+
+                    intanceType.AddMember ctor
                     pt.AddMember intanceType
                     intanceType
 
-                let intanceType = addInstanceTypePrefix rootType
-#else
-                let intanceType = Unchecked.defaultof<_>
-#endif
+                let intanceType = addInstanceType rootType
+
                 let rec addChildSectionTypes (parentConfigSection: IConfiguration) (parentStaticType: ProvidedTypeDefinition) (parentInstanceType: ProvidedTypeDefinition) = 
                     for section in parentConfigSection.GetChildren() do
-                        let sectionStaticType = ProvidedTypeDefinition(section.Key, Some typeof<obj>, ?isErased = isErased)
+                        let sectionStaticType = ProvidedTypeDefinition(tempAssembly, nameSpace, section.Key, Some typeof<obj>, isErased = false)
                         sectionStaticType.AddMember <| ProvidedField.Literal("Path", typeof<string>, section.Path) 
                         parentStaticType.AddMember sectionStaticType
 
-                        let isSection = section.Value <> null 
-                        if isSection
-                        then 
-                            sectionStaticType.AddMember( ProvidedField.Literal( "Value", typeof<string>, section.Value))
-                        else //value
-                            addChildSectionTypes section sectionStaticType parentInstanceType
+                        let propType = 
+                            let isLeaf = section.Value <> null 
+                            if isLeaf
+                            then 
+                                sectionStaticType.AddMember( ProvidedField.Literal( "Value", typeof<string>, section.Value))
+                                typeof<string> 
+                            else
+                                let instanceType = addInstanceType sectionStaticType
+                                addChildSectionTypes section sectionStaticType instanceType
+                                upcast instanceType
 
-                        //let propType = 
-                        //    if section.Value <> null 
-                        //    then 
-                        //        sectionStaticType.AddMember( ProvidedField.Literal( "Value", typeof<string>, section.Value))
-                        //        typeof<string> 
-                        //    else    
-                        //        let instanceType = addInstanceTypePrefix sectionStaticType
-                        //        addChildSectionTypes section sectionStaticType instanceType
-                        //        upcast instanceType
-
-                        //let backingField = ProvidedField(section.Key, propType)
-                        //parentInstanceType.AddMember backingField
+                        let backingField = ProvidedField(section.Key, propType)
+                        parentInstanceType.AddMember backingField
                                 
+                        parentInstanceType.AddMember <| 
+                            ProvidedProperty(
+                                section.Key, 
+                                propType, 
+                                getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)),
+                                setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1]))
+                            )
+
                         //parentInstanceType.AddMember <| 
                         //    ProvidedProperty(
                         //        section.Key, 
-                        //        propType, 
-                        //        getterCode = (fun args -> Expr.FieldGet(args.[0], backingField)), 
-                        //        setterCode = (fun args -> Expr.FieldSet(args.[0], backingField, args.[1]))
+                        //        typeof<string>, 
+                        //        getterCode = (fun args -> <@@ (%%Expr.Coerce(args.[0], typeof<obj>)).GetType().FullName @@>) , 
+                        //        setterCode = (fun args -> <@@ () @@>)
                         //    )
 
-                addChildSectionTypes configRoot rootType Unchecked.defaultof<_>
+                addChildSectionTypes configRoot rootType intanceType
             
 
                 rootType

@@ -35,11 +35,23 @@ let values() =
         AppSettings.Section2.Key21.Value
     )
 
-//[<Fact>]
-//let typed() =
-//    let appSettings = config.Get<AppSettings.InstanceType>()
-//    Assert.NotNull(appSettings)
-//    Assert.Equal<string>(
-//        config.GetValue(AppSettings.Section1.Key11.Path),
-//        appSettings.Section1.Key11
-//    )
+[<Fact>]
+let typed() =
+    let appSettings = config.Get<AppSettings.InstanceType>()
+    Assert.NotNull(appSettings)
+    Assert.Equal<string>(
+        config.GetValue(AppSettings.Section1.Key11.Path),
+        appSettings.Section1.Key11
+    )
+    Assert.Equal<string>(
+        config.GetValue(AppSettings.Section1.Key12.Path), 
+        appSettings.Section1.Key12.Value
+    )
+    Assert.Equal<string>(
+        config.GetValue(AppSettings.Section1.SubSection11.SubKey11.Path), 
+        appSettings.Section1.SubSection11.SubKey11.Value
+    )
+    Assert.Equal<string>(
+        config.GetValue(AppSettings.Section2.Key21.Path), 
+        appSettings.Section2.Key21.Value
+    )
