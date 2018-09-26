@@ -4,7 +4,7 @@ open Xunit
 open FSharp.Configuration.TypeProviders
 open Microsoft.Extensions.Configuration
 
-type AppSettings = JsonConfiguration<"appsettings.json">
+type AppSettings = JsonConfiguration<"appsettings.json" , InstanceTypes = true >
 
 let config = ConfigurationBuilder().AddJsonFile(__SOURCE_DIRECTORY__ + @"\appsettings.json").Build()
 
@@ -43,15 +43,17 @@ let typed() =
         config.GetValue(AppSettings.Section1.Key11.Path),
         appSettings.Section1.Key11
     )
+
     Assert.Equal<string>(
         config.GetValue(AppSettings.Section1.Key12.Path), 
-        appSettings.Section1.Key12.Value
+        appSettings.Section1.Key12
     )
+
     Assert.Equal<string>(
         config.GetValue(AppSettings.Section1.SubSection11.SubKey11.Path), 
-        appSettings.Section1.SubSection11.SubKey11.Value
+        appSettings.Section1.SubSection11.SubKey11
     )
     Assert.Equal<string>(
         config.GetValue(AppSettings.Section2.Key21.Path), 
-        appSettings.Section2.Key21.Value
+        appSettings.Section2.Key21
     )
